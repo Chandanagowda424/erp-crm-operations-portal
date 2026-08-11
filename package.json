@@ -1,0 +1,24 @@
+{
+  "name": "erp-crm-operations-portal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mini ERP + CRM Operations Portal — Full-stack monorepo",
+  "scripts": {
+    "dev:backend": "npm -w backend run dev",
+    "dev:frontend": "npm -w frontend run dev",
+    "build:backend": "npm -w backend run build",
+    "build:frontend": "npm -w frontend run build",
+    "lint:backend": "npm -w backend run lint",
+    "lint:frontend": "npm -w frontend run lint",
+    "db:migrate": "npm -w backend run db:migrate",
+    "db:seed": "npm -w backend run db:seed",
+    "db:studio": "npm -w backend run db:studio"
+  },
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

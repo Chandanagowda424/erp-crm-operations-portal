@@ -1,0 +1,174 @@
+// ─── Prisma Schema — ERP-CRM Operations Portal ──────────────
+// This schema defines the data model for all five modules.
+// Models are grouped by module with clear section comments.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Module 1 — Authentication & Role-Based Access
+// ═══════════════════════════════════════════════════════════════
+
+enum Role {
+  ADMIN
+  SALES
+  WAREHOUSE
+  ACCOUNTS
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(SALES)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ── Relations ──
+  customers      Customer[]
+  salesChallans  SalesChallan[]
+  stockMovements StockMovement[]
+
+  @@map("users")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Module 2 — Customer CRM
+// ═══════════════════════════════════════════════════════════════
+
+model Customer {
+  id          String   @id @default(cuid())
+  name        String
+  email       String?  @unique
+  phone       String?
+  company     String?
+  address     String?
+  city        String?
+  state       String?
+  pincode     String?
+  gstNumber   String?
+  notes       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // ── Relations ──
+  createdById String
+  createdBy   User           @relation(fields: [createdById], references: [id])
+  challans    SalesChallan[]
+
+  @@map("customers")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Module 3 — Product & Inventory
+// ═══════════════════════════════════════════════════════════════
+
+enum ProductUnit {
+  PCS
+  KG
+  LTR
+  MTR
+  BOX
+  PAIR
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  name        String
+  sku         String      @unique
+  description String?
+  unit        ProductUnit @default(PCS)
+  price       Decimal     @db.Decimal(12, 2)
+  stock       Int         @default(0)
+  minStock    Int         @default(0)
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // ── Relations ──
+  stockMovements StockMovement[]
+  challanItems   ChallanItem[]
+
+  @@map("products")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Module 4 — Stock Movement
+// ═══════════════════════════════════════════════════════════════
+
+enum MovementType {
+  IN
+  OUT
+  ADJUSTMENT
+}
+
+model StockMovement {
+  id        String       @id @default(cuid())
+  type      MovementType
+  quantity  Int
+  reason    String?
+  createdAt DateTime     @default(now())
+
+  // ── Relations ──
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+
+  @@map("stock_movements")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Module 5 — Sales Challans
+// ═══════════════════════════════════════════════════════════════
+
+enum ChallanStatus {
+  DRAFT
+  CONFIRMED
+  DISPATCHED
+  DELIVERED
+  CANCELLED
+}
+
+model SalesChallan {
+  id            String        @id @default(cuid())
+  challanNumber String        @unique
+  status        ChallanStatus @default(DRAFT)
+  totalAmount   Decimal       @db.Decimal(14, 2) @default(0)
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // ── Relations ──
+  customerId String
+  customer   Customer      @relation(fields: [customerId], references: [id])
+  createdById String
+  createdBy  User          @relation(fields: [createdById], references: [id])
+  items      ChallanItem[]
+
+  @@map("sales_challans")
+}
+
+model ChallanItem {
+  id        String  @id @default(cuid())
+  quantity  Int
+  unitPrice Decimal @db.Decimal(12, 2)
+  total     Decimal @db.Decimal(14, 2)
+
+  // ── Relations ──
+  challanId String
+  challan   SalesChallan @relation(fields: [challanId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product      @relation(fields: [productId], references: [id])
+
+  @@map("challan_items")
+}
